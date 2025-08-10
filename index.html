@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<title>Daftar Kurir & Zona</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background: #f4f6f9;
+    color: #333;
+  }
+  h1 {
+    text-align: center;
+    padding: 20px;
+    background: #4CAF50;
+    color: white;
+    margin: 0;
+  }
+
+  /* TAMPILAN UTAMA */
+  #dwView {
+    max-width: 900px;
+    margin: 20px auto 40px auto;
+    padding: 0 10px;
+    overflow-x: auto;
+  }
+
+  #dwTable {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.1);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  #dwTable thead tr {
+    background: white;
+    color: #1E90FF; /* Warna biru */
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 2px solid #1E90FF;
+  }
+
+  #dwTable thead tr th:nth-child(1),
+  #dwTable thead tr th:nth-child(2) {
+    color: #1E90FF;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  #dwTable th, #dwTable td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    white-space: nowrap;
+  }
+
+  #dwTable tbody tr:hover {
+    background-color: #f0f9f0;
+  }
+
+  .status-masuk {
+    background-color: #1E90FF; /* biru cerah */
+    color: white;
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: inline-block;
+    user-select: none;
+  }
+
+  .status-off {
+    background-color: #c0392b; /* merah */
+    color: white;
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: inline-block;
+    user-select: none;
+  }
+
+  /* ADMIN PANEL */
+  table {
+    width: 90%;
+    margin: 20px auto;
+    border-collapse: collapse;
+    background: white;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  }
+  th, td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+  }
+  th {
+    background: #f0f0f0;
+  }
+  tr:hover {
+    background: #f9f9f9;
+  }
+
+  .btn {
+    display: inline-block;
+    padding: 8px 12px;
+    margin: 5px;
+    border: none;
+    background: #4CAF50;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .btn:hover {
+    background: #45a049;
+  }
+
+  #loginContainer, #adminPanel {
+    display: none;
+    padding: 20px;
+  }
+
+  .center {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  #offByDateContainer {
+    margin: 20px auto;
+    width: 90%;
+    background: #e7f3e7;
+    padding: 15px;
+    border-radius: 6px;
+  }
+  #offByDateContainer input, #offByDateContainer select {
+    padding: 6px;
+    margin-right: 10px;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Daftar Kurir & Zona</h1>
+
+<!-- TAMPILAN UTAMA -->
+<div id="dwView">
+  <table id="dwTable">
+    <thead>
+      <tr>
+        <th>Nama Kurir</th>
+        <th>Zona</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="kurirList"></tbody>
+  </table>
+  <div class="center">
+    <button class="btn" onclick="showLogin()">Admin Login</button>
+  </div>
+</div>
+
+<!-- LOGIN ADMIN -->
+<div id="loginContainer" class="center">
+  <h2>Login Admin</h2>
+  <input type="text" id="username" placeholder="Username"><br><br>
+  <button class="btn" onclick="login()">Login</button>
+  <button class="btn" onclick="backToDW()">Kembali</button>
+</div>
+
+<!-- PANEL ADMIN -->
+<div id="adminPanel">
+  <h2>Panel Admin</h2>
+
+  <!-- Form tambah kurir -->
+  <input type="text" id="newName" placeholder="Nama Kurir">
+  <select id="newZona">
+    <option>BARAT</option>
+    <option>BULKY</option>
+    <option>INDUK</option>
+    <option>INDUK/SEKURAU SEKERAT</option>
+    <option>PT KIN</option>
+    <option>SEKURAU SEKERAT</option>
+    <option>SELATAN</option>
+    <option>TEPIAN</option>
+    <option>TIMUR</option>
+  </select>
+  <button class="btn" onclick="addKurir()">Tambah Kurir</button>
+
+  <!-- Tabel data kurir -->
+  <table>
+    <thead>
+      <tr>
+        <th>Nama</th>
+        <th>Zona</th>
+        <th>Status</th>
+        <th>Aksi</th>
+      </tr>
+    </thead>
+    <tbody id="adminKurirList"></tbody>
+  </table>
+
+  <!-- Atur OFF per tanggal -->
+  <div id="offByDateContainer">
+    <h3>Atur Status OFF per Tanggal</h3>
+    <input type="date" id="offDate" />
+    <select id="offKurir"></select>
+    <button class="btn" onclick="setOffByDate()">Set OFF untuk tanggal ini</button>
+    <button class="btn" onclick="clearOffByDate()">Hapus OFF untuk tanggal ini (semua kurir)</button>
+    <p><small>* Status OFF per tanggal akan override status utama saat tanggal tersebut tiba.</small></p>
+    <div id="offByDateList"></div>
+  </div>
+
+  <div class="center">
+    <button class="btn" onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<script>
+let kurirData = JSON.parse(localStorage.getItem('kurirData')) || [
+  // BARAT
+  {nama:"DEDE FAJAR TRAZANA", zona:"BARAT", status:"Masuk"},
+  {nama:"ERAS TANDILLING", zona:"BARAT", status:"Masuk"},
+  {nama:"EVIANTI TIMANG PARANDUK", zona:"BARAT", status:"Masuk"},
+  {nama:"MELIANA", zona:"BARAT", status:"Masuk"},
+  {nama:"MUSTARI", zona:"BARAT", status:"Masuk"},
+  {nama:"NUUR AKMAL", zona:"BARAT", status:"Masuk"},
+  {nama:"RIKA YANI BR HUTAGOL", zona:"BARAT", status:"Masuk"},
+  {nama:"SOFY ZLAYKHA", zona:"BARAT", status:"Masuk"},
+  {nama:"MUCHTAR A", zona:"BARAT", status:"Masuk"},
+  // BULKY
+  {nama:"MELSI AMBALABI", zona:"BULKY", status:"Masuk"},
+  {nama:"HERLINA FEBRIANTI TODING", zona:"BULKY", status:"Masuk"},
+  // INDUK
+  {nama:"SUGIANTO", zona:"INDUK", status:"Masuk"},
+  {nama:"JUMIATI", zona:"INDUK", status:"Masuk"},
+  {nama:"MARADONA HUT AGAOL", zona:"INDUK", status:"Masuk"},
+  {nama:"SITTY NURHAYO", zona:"INDUK", status:"Masuk"},
+  {nama:"RIAN PRIMA ROSIDAH", zona:"INDUK", status:"Masuk"},
+  {nama:"RIBUT PAINO", zona:"INDUK", status:"Masuk"},
+  {nama:"ERI NANDO", zona:"INDUK", status:"Masuk"},
+  {nama:"TOMI SISWANTO", zona:"INDUK", status:"Masuk"},
+  {nama:"YOHANES BILIGREHEM", zona:"INDUK", status:"Masuk"},
+  {nama:"YULIANTY SIMATUPANG", zona:"INDUK", status:"Masuk"},
+  {nama:"NAFTALI TALLU BALI", zona:"INDUK", status:"Masuk"},
+  // INDUK/SEKURAU SEKERAT
+  {nama:"NAFTALI TALLU BALI", zona:"INDUK/SEKURAU SEKERAT", status:"Masuk"},
+  // PT KIN
+  {nama:"NATASYA GLORY SIAGIAN", zona:"PT KIN", status:"Masuk"},
+  {nama:"MUH ARIS", zona:"PT KIN", status:"Masuk"},
+  {nama:"ADRIANA", zona:"PT KIN", status:"Masuk"},
+  {nama:"NOVRI TULEN", zona:"PT KIN", status:"Masuk"},
+  // SEKURAU SEKERAT
+  {nama:"AGUSTINA MANGALIK", zona:"SEKURAU SEKERAT", status:"Masuk"},
+  {nama:"KHUSNUL KHATIMAH", zona:"SEKURAU SEKERAT", status:"Masuk"},
+  {nama:"MR. IFRANSYAH", zona:"SEKURAU SEKERAT", status:"Masuk"},
+  // SELATAN
+  {nama:"SALMAWATI", zona:"SELATAN", status:"Masuk"},
+  {nama:"RAYSHA RISIKIA", zona:"SELATAN", status:"Masuk"},
+  // TEPIAN
+  {nama:"ANDI LUKMAN AGUS ISMAN", zona:"TEPIAN", status:"Masuk"},
+  {nama:"BAYU KURNIAWAN", zona:"TEPIAN", status:"Masuk"},
+  {nama:"ANNISA AGHATA", zona:"TEPIAN", status:"Masuk"},
+  {nama:"ELISA NUR RISKIYANI", zona:"TEPIAN", status:"Masuk"},
+  {nama:"NAZWATH NABILAH", zona:"TEPIAN", status:"Masuk"},
+  {nama:"WITONO", zona:"TEPIAN", status:"Masuk"},
+  // TIMUR
+  {nama:"HENDRA YATNA", zona:"TIMUR", status:"Masuk"},
+  {nama:"MUHAMMAD FAJRI FAUZI", zona:"TIMUR", status:"Masuk"},
+  {nama:"MUHAMMAD KAMALURROFIQ", zona:"TIMUR", status:"Masuk"},
+  {nama:"TITO SUSANTO", zona:"TIMUR", status:"Masuk"},
+  {nama:"YOWAS B", zona:"TIMUR", status:"Masuk"}
+];
+
+let offByDate = JSON.parse(localStorage.getItem('offByDate')) || {};
+
+function renderDW() {
+  const today = new Date().toISOString().slice(0,10); // yyyy-mm-dd
+  let html = "";
+  kurirData.forEach(k => {
+    let statusFinal = k.status;
+
+    if (Array.isArray(offByDate[today]) && offByDate[today].includes(k.nama)) {
+      statusFinal = 'Off';
+    }
+
+    if (!statusFinal) statusFinal = 'Masuk';
+
+    html += `<tr>
+      <td>${k.nama}</td>
+      <td>${k.zona}</td>
+      <td><span class="${statusFinal==='Masuk'?'status-masuk':'status-off'}">${statusFinal}</span></td>
+    </tr>`;
+  });
+  document.getElementById("kurirList").innerHTML = html;
+}
+
+function renderAdmin() {
+  let html = "";
+  kurirData.forEach((k, i) => {
+    html += `<tr>
+      <td><input value="${k.nama}" onchange="kurirData[${i}].nama=this.value; saveData(); renderAdmin(); renderDW(); renderOffKurirOptions();"></td>
+      <td>
+        <select onchange="kurirData[${i}].zona=this.value; saveData(); renderAdmin(); renderDW();">
+          <option ${k.zona==='BARAT'?'selected':''}>BARAT</option>
+          <option ${k.zona==='BULKY'?'selected':''}>BULKY</option>
+          <option ${k.zona==='INDUK'?'selected':''}>INDUK</option>
+          <option ${k.zona==='INDUK/SEKURAU SEKERAT'?'selected':''}>INDUK/SEKURAU SEKERAT</option>
+          <option ${k.zona==='PT KIN'?'selected':''}>PT KIN</option>
+          <option ${k.zona==='SEKURAU SEKERAT'?'selected':''}>SEKURAU SEKERAT</option>
+          <option ${k.zona==='SELATAN'?'selected':''}>SELATAN</option>
+          <option ${k.zona==='TEPIAN'?'selected':''}>TEPIAN</option>
+          <option ${k.zona==='TIMUR'?'selected':''}>TIMUR</option>
+        </select>
+      </td>
+      <td>
+        <select onchange="kurirData[${i}].status=this.value; saveData(); renderAdmin(); renderDW();">
+          <option ${k.status==='Masuk'?'selected':''}>Masuk</option>
+          <option ${k.status==='Off'?'selected':''}>Off</option>
+        </select>
+      </td>
+      <td><button onclick="hapusKurir(${i})" class="btn">Hapus</button></td>
+    </tr>`;
+  });
+  document.getElementById("adminKurirList").innerHTML = html;
+  renderOffKurirOptions();
+  renderOffByDateList();
+}
+
+function hapusKurir(i) {
+  const nama = kurirData[i].nama;
+
+  // Hapus nama kurir di semua tanggal offByDate
+  Object.keys(offByDate).forEach(tgl => {
+    if (Array.isArray(offByDate[tgl])) {
+      offByDate[tgl] = offByDate[tgl].filter(n => n !== nama);
+      if (offByDate[tgl].length === 0) {
+        delete offByDate[tgl];
+      }
+    }
+  });
+
+  kurirData.splice(i,1);
+  saveData();
+  saveOffByDate();
+  renderAdmin();
+  renderDW();
+}
+
+function saveData() {
+  localStorage.setItem('kurirData', JSON.stringify(kurirData));
+}
+
+function saveOffByDate() {
+  localStorage.setItem('offByDate', JSON.stringify(offByDate));
+}
+
+function addKurir() {
+  let nama = document.getElementById("newName").value;
+  let zona = document.getElementById("newZona").value;
+  if (nama.trim()==="") return alert("Nama harus diisi");
+  kurirData.push({nama, zona, status:"Masuk"});
+  saveData();
+  renderAdmin();
+  renderDW();
+  document.getElementById("newName").value = "";
+}
+
+function showLogin() {
+  document.getElementById("dwView").style.display="none";
+  document.getElementById("loginContainer").style.display="block";
+}
+
+function backToDW() {
+  document.getElementById("loginContainer").style.display="none";
+  document.getElementById("dwView").style.display="block";
+}
+
+function login() {
+  let user = document.getElementById("username").value;
+  if (user === "013579") {
+    document.getElementById("loginContainer").style.display="none";
+    document.getElementById("adminPanel").style.display="block";
+    renderAdmin();
+  } else {
+    alert("Username salah!");
+  }
+}
+
+function logout() {
+  document.getElementById("adminPanel").style.display="none";
+  document.getElementById("dwView").style.display="block";
+}
+
+function renderOffKurirOptions() {
+  const select = document.getElementById('offKurir');
+  select.innerHTML = '';
+  kurirData.forEach(k => {
+    let opt = document.createElement('option');
+    opt.value = k.nama;
+    opt.textContent = k.nama;
+    select.appendChild(opt);
+  });
+}
+
+function setOffByDate() {
+  const date = document.getElementById('offDate').value;
+  const kurir = document.getElementById('offKurir').value;
+  if (!date) return alert('Pilih tanggal dulu');
+  if (!kurir) return alert('Pilih kurir dulu');
+
+  if (!offByDate[date]) offByDate[date] = [];
+  if (!offByDate[date].includes(kurir)) {
+    offByDate[date].push(kurir);
+    saveOffByDate();
+    alert(`Kurir ${kurir} di-set OFF pada tanggal ${date}`);
+    renderOffByDateList();
+    renderDW();
+  } else {
+    alert('Kurir ini sudah di-set OFF pada tanggal tersebut');
+  }
+}
+
+function clearOffByDate() {
+  const date = document.getElementById('offDate').value;
+  if (!date) return alert('Pilih tanggal dulu');
+  if (offByDate[date]) {
+    delete offByDate[date];
+    saveOffByDate();
+    alert(`Status OFF pada tanggal ${date} sudah dihapus`);
+    renderOffByDateList();
+    renderDW();
+  } else {
+    alert('Tidak ada data OFF pada tanggal tersebut');
+  }
+}
+
+function renderOffByDateList() {
+  const container = document.getElementById('offByDateList');
+  if (Object.keys(offByDate).length === 0) {
+    container.innerHTML = '<p>Tidak ada data OFF per tanggal.</p>';
+    return;
+  }
+
+  let html = '<ul>';
+  for (let date in offByDate) {
+    html += `<li><strong>${date}</strong>: ${offByDate[date].join(', ')}</li>`;
+  }
+  html += '</ul>';
+  container.innerHTML = html;
+}
+
+renderDW();
+</script>
+
+</body>
+</html>
